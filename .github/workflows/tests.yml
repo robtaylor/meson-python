@@ -42,6 +42,9 @@ jobs:
         python:
           - '3.7'
           - '3.11'
+        editable:
+          - 'editable meson-python'
+          - ''
         meson:
           -
         include:
@@ -75,6 +78,8 @@ jobs:
           - os: windows
             python: '3.11'
             meson: '@git+https://github.com/mesonbuild/meson.git'
+          - editable: 'editable meson-python'
+            meson: '~=1.1.0'
 
     steps:
       - name: Checkout
@@ -101,8 +106,17 @@ jobs:
         run: python -m pip --disable-pip-version-check install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
 
-      - name: Install
+      - name: Install meson-python
         run: python -m pip --disable-pip-version-check install .[test]
+        if: ${{ ! matrix.editable }}
+
+      - name: Install meson-python with --editable
+        # install normally first so build deps are installed
+        run: python -m pip --disable-pip-version-check install .[test]
+        # then editable
+        run: python -m pip --disable-pip-version-check install -e .[test] --no-build-isolation
+
+        if: ${{ matrix.editable == 'editable meson-python' }}
 
       - name: Run tests
         run: >-
@@ -111,6 +125,8 @@ jobs:
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
         if: ${{ always() }}
+
+
 
   msvc:
     runs-on: windows-latest
